@@ -6,6 +6,7 @@ function App() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [expandedRows, setExpandedRows] = useState(new Set())
 
   const handleSubmit = async () => {
     if (!file) return
@@ -26,6 +27,7 @@ function App() {
       
       if (data.success) {
         setResults(data)
+        setExpandedRows(new Set()) // 결과 나오면 초기화
       } else {
         setError(data.error || 'Analysis failed')
       }
@@ -40,6 +42,42 @@ function App() {
     setFile(null)
     setResults(null)
     setError(null)
+    setExpandedRows(new Set())
+  }
+
+  const toggleRow = (index) => {
+    const newExpanded = new Set(expandedRows)
+    if (newExpanded.has(index)) {
+      newExpanded.delete(index)
+    } else {
+      newExpanded.add(index)
+    }
+    setExpandedRows(newExpanded)
+  }
+
+  const expandAll = () => {
+    if (results?.allIngredients) {
+      setExpandedRows(new Set(results.allIngredients.map((_, i) => i)))
+    }
+  }
+
+  const collapseAll = () => {
+    setExpandedRows(new Set())
+  }
+
+  // 점수에 따른 색상
+  const getScoreClass = (score) => {
+    if (score === null || score === undefined || score === '') return 'score-unknown'
+    const num = parseInt(score)
+    if (num <= 1) return 'score-safe'
+    if (num <= 2) return 'score-moderate'
+    return 'score-risky'
+  }
+
+  // 위험 성분인지 체크
+  const isWarning = (score) => {
+    const num = parseInt(score)
+    return num >= 3
   }
 
   return (
@@ -106,28 +144,67 @@ function App() {
             </div>
           )}
 
-          {/* All Ingredients Table */}
-          <h3>All Ingredients</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Ingredient</th>
-                <th>Category</th>
-                <th>Comedogenic</th>
-                <th>Note</th>
-              </tr>
-            </thead>
-            <tbody>
+          {/* All Ingredients - Accordion Style */}
+          <div className="ingredients-section">
+            <div className="ingredients-header">
+              <h3>All Ingredients</h3>
+              <div className="expand-buttons">
+                <button onClick={expandAll} className="expand-btn">Expand All</button>
+                <button onClick={collapseAll} className="expand-btn">Collapse</button>
+              </div>
+            </div>
+
+            {/* Table Header */}
+            <div className="accordion-header">
+              <span>Ingredient</span>
+              <span>Score</span>
+            </div>
+
+            {/* Accordion Items */}
+            <div className="accordion-list">
               {results.allIngredients.map((item, idx) => (
-                <tr key={idx}>
-                  <td>{item.Ingredient}</td>
-                  <td>{item.Category}</td>
-                  <td>{item.ComedogenicScore}</td>
-                  <td>{item.Note}</td>
-                </tr>
+                <div 
+                  key={idx} 
+                  className={`accordion-item ${isWarning(item.ComedogenicScore) ? 'warning' : ''}`}
+                >
+                  <div 
+                    className="accordion-row"
+                    onClick={() => toggleRow(idx)}
+                  >
+                    <div className="ingredient-info">
+                      {isWarning(item.ComedogenicScore) && <span className="warning-icon">⚠️</span>}
+                      <div className="ingredient-text">
+                        <span className="ingredient-name">{item.Ingredient}</span>
+                        <span className="ingredient-category">{item.Category}</span>
+                      </div>
+                    </div>
+                    <div className="row-right">
+                      <span className={`score-badge ${getScoreClass(item.ComedogenicScore)}`}>
+                        {item.ComedogenicScore !== null && item.ComedogenicScore !== '' 
+                          ? item.ComedogenicScore 
+                          : '?'}
+                      </span>
+                      <span className="chevron">{expandedRows.has(idx) ? '▲' : '▼'}</span>
+                    </div>
+                  </div>
+                  
+                  {expandedRows.has(idx) && (
+                    <div className="accordion-content">
+                      <p>{item.Note || 'No additional information.'}</p>
+                    </div>
+                  )}
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+
+            {/* Legend */}
+            <div className="score-legend">
+              <span className="legend-title">Score Guide:</span>
+              <span className="legend-item score-safe">0-1 Safe</span>
+              <span className="legend-item score-moderate">2 Moderate</span>
+              <span className="legend-item score-risky">3-5 Risky</span>
+            </div>
+          </div>
 
           <div className="again-wrap">
             <button className="reset-btn" onClick={handleReset}>
