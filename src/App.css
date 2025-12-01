@@ -211,17 +211,23 @@ table {
   margin-top: 10px;
 }
 
+/* 🔧 테이블 줄 정렬 고친 버전 */
+th,
+td {
+  padding: 8px;
+  font-size: 13px;
+  line-height: 1.4;      /* 줄 간격 통일 */
+  vertical-align: top;   /* 위로 정렬 */
+  overflow-wrap: break-word;/* 긴 단어 줄바꿈 */
+}
+
 th {
   background: #FFF6BF;
-  padding: 8px;
   text-align: left;
-  font-size: 13px;
 }
 
 td {
-  padding: 8px;
   border-bottom: 1px solid #eee;
-  font-size: 13px;
 }
 
 /* Again Button */
